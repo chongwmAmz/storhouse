@@ -16,8 +16,8 @@ sudo amazon-linux-extras install -y postgresql13
 
 PGPASSWORD=alfresco psql --host=$DB_HOSTNAME --dbname postgres \
      --username=alfresco \
-     --command="CREATE DATABASE syncservice-postgresql OWNER alfresco ENCODING 'utf8'"
+     --command="CREATE DATABASE syncservicepostgresql OWNER alfresco ENCODING 'utf8'"
 
 PGPASSWORD=alfresco psql --host=$DB_HOSTNAME --dbname postgres \
      --username=alfresco \
-     --command="GRANT ALL PRIVILEGES ON DATABASE syncservice-postgresql TO alfresco"
+     --command="GRANT ALL PRIVILEGES ON DATABASE syncservicepostgresql TO alfresco"
