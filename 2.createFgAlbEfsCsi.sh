@@ -19,3 +19,17 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 --set serviceAccount.name=aws-load-balancer-controller \
 --set region=${AWS_REGION} --set vpcId=${VPC_ID}
 kubectl -n kube-system rollout status deployment aws-load-balancer-controller
+POLICY_NAME=AwsEksEfsCsiDriverPolicy
+POLICY_FILE=$POLICY_FILE.json
+wget -O $POLICY_FILE https://github.com/kubernetes-sigs/aws-efs-csi-driver/raw/master/docs/iam-policy-example.json
+aws iam create-policy \
+    --policy-name  $POLICY_NAME \
+    --policy-document file://$POLICY_FILE
+    POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME']" | jq -r .[].Arn)
+eksctl create iamserviceaccount \
+    --cluster $CLUSTER_NAME \
+    --namespace kube-system \
+    --name efs-csi-controller-sa \
+    --attach-policy-arn $POLICY_ARN \
+    --approve \
+    --region $AWS_REGION
