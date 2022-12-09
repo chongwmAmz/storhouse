@@ -21,7 +21,7 @@ kind: ClusterConfig
 kubernetesNetworkConfig:
   ipFamily: IPv4
 metadata:
-  name: SgFgAlfOs
+  name: ${CLUSTER_NAME}
   region: ap-southeast-1
   version: "1.23"
 privateCluster:
