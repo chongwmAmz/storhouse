@@ -2,23 +2,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-1:817632472177:certificate/c22d8288-cc05-4665-be8c-25a032a6c371
+    alb.ingress.kubernetes.io/certificate-arn: <ARN_Of_Certificate>
     alb.ingress.kubernetes.io/healthcheck-path: /
     alb.ingress.kubernetes.io/load-balancer-name: acs-alfresco-alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/ssl-redirect: "443"
     alb.ingress.kubernetes.io/success-codes: "200"
     alb.ingress.kubernetes.io/target-type: ip
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"alb.ingress.kubernetes.io/certificate-arn":"arn:aws:acm:ap-southeast-1:817632472177:certificate/c22d8288-cc05-4665-be8c-25a032a6c371","alb.ingress.kubernetes.io/healthcheck-path":"/","alb.ingress.kubernetes.io/load-balancer-name":"acs-alfresco-alb","alb.ingress.kubernetes.io/scheme":"internet-facing","alb.ingress.kubernetes.io/ssl-redirect":"443","alb.ingress.kubernetes.io/success-codes":"200","alb.ingress.kubernetes.io/target-type":"ip"},"name":"acs-alfresco-alb-ingress-https","namespace":"alfresco"},"spec":{"ingressClassName":"alb","rules":[{"http":{"paths":[{"backend":{"service":{"name":"acs-alfresco-cs-repository","port":{"number":80}}},"path":"/repository","pathType":"Prefix"}]}},{"http":{"paths":[{"backend":{"service":{"name":"acs-alfresco-cs-share","port":{"number":80}}},"path":"/share","pathType":"Prefix"}]}},{"http":{"paths":[{"backend":{"service":{"name":"acs-alfresco-cs-repository","port":{"number":80}}},"path":"/api-explorer","pathType":"Prefix"},{"backend":{"service":{"name":"acs-alfresco-cs-repository","port":{"number":80}}},"path":"/alfresco","pathType":"Prefix"}]}},{"http":{"paths":[{"backend":{"service":{"name":"acs-alfresco-sync-service","port":{"number":80}}},"path":"/syncservice","pathType":"Prefix"}]}},{"http":{"paths":[{"backend":{"service":{"name":"acs-alfresco-dw","port":{"number":80}}},"path":"/","pathType":"Prefix"}]}}]}}
-  creationTimestamp: "2022-12-08T23:21:07Z"
-  finalizers:
-  - ingress.k8s.aws/resources
-  generation: 1
   name: acs-alfresco-alb-ingress-https
   namespace: alfresco
-  resourceVersion: "357458"
-  uid: 9de3bcdf-a521-4d25-a35f-5128534f508a
 spec:
   ingressClassName: alb
   rules:
@@ -74,7 +66,3 @@ spec:
               number: 80
         path: /
         pathType: Prefix
-status:
-  loadBalancer:
-    ingress:
-    - hostname: acs-alfresco-alb-23470623.ap-southeast-1.elb.amazonaws.com
