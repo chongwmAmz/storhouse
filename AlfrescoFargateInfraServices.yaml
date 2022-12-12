@@ -1,0 +1,713 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS serverless infrastructure services for Alfresco Content Services 7.2.
+Outputs:
+  FileSystemMount:
+    Description: File system ID
+    Value: !Join 
+      - ''
+      - - ''
+        - !GetAtt 
+          - EFSSharedFileStore
+          - FileSystemId
+        - '.efs.'
+        - !Sub '${AWS::Region}'
+        - '.amazonaws.com'
+  FileSystemMountCommand:
+    Description: File system ID
+    Value: !Join 
+      - ''
+      - - ''
+        - 'sudo mkdir -p '
+        - !Ref SharedFileStoreMountPoint
+        - ' && sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport '
+        - !GetAtt 
+          - EFSSharedFileStore
+          - FileSystemId
+        - '.efs.'
+        - !Sub '${AWS::Region}'
+        - '.amazonaws.com'
+        - ':/ '
+        - !Ref SharedFileStoreMountPoint
+  EC2SideCar:
+    Description: ID of the EC2 micro instance to run configuration scripts
+    Value: !Ref Ec2Instance
+  DatabaseEndPoint:
+    Description: Database Server Instance ID
+    Value: 
+      'Fn::GetAtt':
+        - RDSDBCluster
+        - Endpoint.Address
+  ActiveMQEndPoint:
+    Description: AmazonMQ OpenWire end point ActiveMQ
+    Value: !Select [0, !GetAtt AmazonMQBroker.OpenWireEndpoints]
+        
+  OpenSearchDomainEndpoint:
+    Description: OpenSearch domain endpoint
+    Value:
+      'Fn::GetAtt':
+        - OpenSearchServiceDomain
+        - DomainEndpoint
+  InternalAllAccessSecurityGroupId: 
+    Description: ID of the internal security group with access to all internal ports
+    Value: !Ref InternalAllAccessSecurityGroup
+  EC2SideCar:
+    Description: ID of the EC2 micro instance to run configuration scripts
+    Value: !Ref Ec2Instance
+    
+Parameters:
+  EC2KeyName:
+    Type: String
+    Default: "AlfEKS.pem"
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Default: "vpc-04430248de3206393"
+  DBName:
+    Type: String
+    Default: alfresco
+  DBMasterUsername:
+    Type: String
+    Default: alfresco
+  DBMasterUserPassword:
+    Type: String
+    Default: alfresco
+    NoEcho: true
+  DBClusterIdentifier:
+    Type: String
+    Default: alfrescodbv2-cluster
+    AllowedPattern: ^[a-z-][a-z0-9-]*$
+    Description:  1 to 63 lowercase letters, numbers, or hyphens. First character must be a letter. Can't end with a hyphen or contain two consecutive hyphens.
+  DBEngineVersion:
+    Type: String
+    Default: "14.5"
+    AllowedValues:
+      - 13.6
+      - 13.7
+      - 13.8
+      - 14.3
+      - 14.4
+      - 14.5
+  DBMinCapacity:
+    Type: String
+    Default: "0.5"
+  DBMaxCapacity:
+    Type: String
+    Default: "16.0"
+  SharedFileStore:
+    Type: String
+    Default: "Alfresco-SharedFS"
+  SharedFileStoreMountPoint:
+    Description: The Linux mount point for the EFS volume
+    Type: String
+    MinLength: '1'
+    Default: /mnt/sharedfilestore
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: "subnet-02d3e2dad7fef8f92,subnet-02b0f0da7d0d848fc"
+  PrivateSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: "subnet-029758f12975cfab8,subnet-0672a5f2402484ecd"
+  InternalSecurityGroups:
+     Type: List<AWS::EC2::SecurityGroup::Id>
+     #https://tinyurl.com/4spbj9na
+     Default: "sg-0af86e87c4a7f2a96,sg-0ed9222a1df15746e"
+  AmazonMQBrokerName:
+    Description: Enter a name for the MQ broker to be created
+    Type: String
+    Default: ACS-MQBroker 
+  AmazonMQBrokerUserName:
+    Description: Enter a username for the MQ broker to be created
+    Type: String
+    Default: "alfresco"
+  AmazonMQBrokerPassword:
+    Description: Enter a password to administer the MQ broker to be created. Minimum 12 characters, at least 4 unique characters. Can't contain commas (,), colons (:), equals signs (=), spaces or non-printable ASCII characters.
+    Type: String
+    Default: beeisnotdctm
+
+  KMS:
+    Type: 'String'
+    Description: Description of KMS for use with OpenSearch
+    Default: 'mrk-f5f10b5a31564b75837b2b2bb1f590f3'
+  OpenSearchDomainName:
+    Description: Enter a name for the OpenSearch domain to be created
+    Type: String
+    Default: acs-opensearch
+  OpenSearchInstanceType:
+    Description: OpenSearch instance type
+    Type: String
+    Default: r6g.large.search
+    AllowedValues:
+      - r5.large.search
+      - r5.xlarge.search
+      - r5.2xlarge.search
+      - r5.4xlarge.search
+      - r5.12xlarge.search
+      - r6g.large.search
+      - r6g.xlarge.search
+      - r6g.2xlarge.search
+      - r6g.4xlarge.search
+      - r6g.8xlarge.search
+      - r6g.16xlarge.search
+      
+    ConstraintDescription: must be a valid instance type for the current region.    
+  OpenSearchMasterUserName:
+    Description: Enter master username for the OpenSearch domain to be created, must be between 1 and 16 characters.
+    Type: String
+    Default: alfresco
+    AllowedPattern: '^[a-z]{1,16}$'
+  OpenSearchMasterPassword:
+    Description: Enter master password for the OpenSearch domain to be created, min 8 characters. At least one uppercase letter, one lowercase letter, one number, and one special character.
+    Type: String
+    Default: Th-sIs1t
+    AllowedPattern: '^(?=.{8,}$)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?\W).*$'    
+  SideCarInstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hi1.4xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+      - cg1.4xlarge
+    ConstraintDescription: must be a valid EC2 instance type.    
+
+#################
+Resources:
+  InternalAllAccessSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Everything inside is open with external SSH"
+      GroupName: !Sub '${AWS::StackName}-internalallaccess'
+      VpcId: !Ref VPC
+      SecurityGroupEgress: 
+      - 
+        CidrIp: "0.0.0.0/0"
+        IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Citation
+          Value: "https://gist.github.com/alanwill/9254414"
+  InternalAllAccessSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: InternalAllAccessSecurityGroup
+    Properties:
+      GroupId: !Ref InternalAllAccessSecurityGroup
+      IpProtocol: "-1"
+      FromPort: '0'
+      ToPort: '65535'
+      SourceSecurityGroupId: !Ref InternalAllAccessSecurityGroup
+      SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds: !Ref PrivateSubnets
+
+
+
+  RDSDBCluster:
+    Type: 'AWS::RDS::DBCluster'
+    DependsOn: DatabaseSubnetGroup
+    Properties:
+      Engine: aurora-postgresql
+      DBClusterIdentifier: !Ref DBClusterIdentifier
+      EngineVersion: !Ref DBEngineVersion
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBMasterUserPassword
+      DatabaseName: !Ref DBName
+      Port: 5432
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: !Ref DBMinCapacity
+        MaxCapacity: !Ref DBMaxCapacity
+      DBSubnetGroupName:
+          Ref: DatabaseSubnetGroup
+      VpcSecurityGroupIds: !Split
+        - ","
+        - !Sub
+          - "${existingSgToString},${InternalAllAccessSecurityGroup}"
+          - existingSgToString: !Join [",",!Ref InternalSecurityGroups]
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      DBClusterIdentifier: !Ref RDSDBCluster
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      Engine: aurora-postgresql
+      DBInstanceClass: db.serverless
+      EnablePerformanceInsights: false
+      MonitoringInterval: 0
+
+
+  EFSSharedFileStore:
+    Type: "AWS::EFS::FileSystem"
+    Properties:
+      BackupPolicy:
+        Status: DISABLED    
+      PerformanceMode: "generalPurpose"
+      Encrypted: false
+      ThroughputMode: "bursting"
+      FileSystemTags: 
+      - 
+        Key: "Name"
+        Value: !Ref SharedFileStore
+      - 
+        Key: Application
+        Value: !Ref 'AWS::StackId'
+      -
+        Key: Citation
+        Value: "https://tinyurl.com/yc2wv2nz"
+  EFSMountTargetResource1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSSharedFileStore
+      SubnetId: !Select [0, !Ref PrivateSubnets]
+      SecurityGroups: !Split
+        - ","
+        - !Sub
+          - "${existingSgToString},${InternalAllAccessSecurityGroup}"
+          - existingSgToString: !Join [",",!Ref InternalSecurityGroups]         
+  EFSMountTargetResource2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSSharedFileStore
+      SubnetId: !Select [1, !Ref PrivateSubnets]
+      SecurityGroups: !Split
+        - ","
+        - !Sub
+          - "${existingSgToString},${InternalAllAccessSecurityGroup}"
+          - existingSgToString: !Join [",",!Ref InternalSecurityGroups]
+  AmazonMQBroker:
+    Type: "AWS::AmazonMQ::Broker"
+    Properties:
+      AutoMinorVersionUpgrade: true
+      BrokerName: !Sub '${AmazonMQBrokerName}_${AWS::StackName}'
+      DeploymentMode: "SINGLE_INSTANCE"
+      EngineType: "ActiveMQ"
+      EngineVersion: "5.15.15"
+      HostInstanceType: "mq.m5.large"
+      PubliclyAccessible: false
+      StorageType: "ebs"
+      AuthenticationStrategy: "simple"
+      MaintenanceWindowStartTime: 
+        DayOfWeek: "FRIDAY"
+        TimeOfDay: "20:00"
+        TimeZone: "America/New_York"
+      Logs: 
+        Audit: false
+        General: false
+      SecurityGroups: !Split
+        - ","
+        - !Sub
+          - "${existingSgToString},${InternalAllAccessSecurityGroup}"
+          - existingSgToString: !Join [",",!Ref InternalSecurityGroups]
+      SubnetIds: 
+      - !Select [0, !Ref PrivateSubnets]
+      Tags: 
+      - 
+        Key: "APNblog"
+        Value: "OpenSearchACS"
+      Users: 
+      - 
+        Username: !Ref AmazonMQBrokerUserName
+        Password: !Ref AmazonMQBrokerPassword
+        ConsoleAccess: true
+      EncryptionOptions: 
+        UseAwsOwnedKey: true
+
+
+
+
+  OpenSearchServiceDomain:
+    Type: "AWS::OpenSearchService::Domain"
+    Properties:
+      DomainName: !Sub '${AWS::StackName}-${OpenSearchDomainName}' 
+      EngineVersion: "OpenSearch_2.3"
+      ClusterConfig: 
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType: !Ref OpenSearchInstanceType
+        ZoneAwarenessEnabled: false
+        WarmEnabled: false
+      AccessPolicies:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: es:*
+            Resource: !Sub arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${AWS::StackName}-${OpenSearchDomainName}/*
+      VPCOptions: 
+        SecurityGroupIds: !Split
+        - ","
+        - !Sub
+          - "${existingSgToString},${InternalAllAccessSecurityGroup}"
+          - existingSgToString: !Join [",",!Ref InternalSecurityGroups]
+        SubnetIds:
+        - !Select [0, !Ref PrivateSubnets]
+      EncryptionAtRestOptions: 
+        Enabled: true
+        KmsKeyId: !Ref KMS
+      NodeToNodeEncryptionOptions: 
+        Enabled: true
+      AdvancedOptions: 
+        "indices.fielddata.cache.size": "20"
+        "indices.query.bool.max_clause_count": "1024"
+        override_main_response_version: "false"
+        "rest.action.multi.allow_explicit_index": "true"
+      EBSOptions: 
+        EBSEnabled: true
+        VolumeType: "gp3"
+        VolumeSize: 40
+        Throughput: 125
+        Iops: 3000
+      CognitoOptions: 
+        Enabled: false
+      DomainEndpointOptions: 
+        EnforceHTTPS: true
+        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+        CustomEndpointEnabled: false
+      AdvancedSecurityOptions: 
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: !Ref OpenSearchMasterUserName
+          MasterUserPassword: !Ref OpenSearchMasterPassword
+      Tags: 
+      - 
+        Key: "APNblog"
+        Value: "OpenSearchACS"
+        
+  Ec2Instance: 
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Init:
+        configSets:
+          MountConfig:
+          - setup
+          - mount
+        setup:
+          packages:
+            yum:
+              nfs-utils: []
+          files:
+            "/home/ec2-user/post_nfsstat":
+              content: !Sub |
+                #!/bin/bash
+
+                INPUT="$(cat)"
+                CW_JSON_OPEN='{ "Namespace": "EFS", "MetricData": [ '
+                CW_JSON_CLOSE=' ] }'
+                CW_JSON_METRIC=''
+                METRIC_COUNTER=0
+
+                for COL in 1 2 3 4 5 6; do
+
+                 COUNTER=0
+                 METRIC_FIELD=$COL
+                 DATA_FIELD=$(($COL+($COL-1)))
+
+                 while read line; do
+                   if [[ COUNTER -gt 0 ]]; then
+
+                     LINE=`echo $line | tr -s ' ' `
+                     AWS_COMMAND="aws cloudwatch put-metric-data --region ${AWS::Region}"
+                     MOD=$(( $COUNTER % 2))
+
+                     if [ $MOD -eq 1 ]; then
+                       METRIC_NAME=`echo $LINE | cut -d ' ' -f $METRIC_FIELD`
+                     else
+                       METRIC_VALUE=`echo $LINE | cut -d ' ' -f $DATA_FIELD`
+                     fi
+
+                     if [[ -n "$METRIC_NAME" && -n "$METRIC_VALUE" ]]; then
+                       INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                       CW_JSON_METRIC="$CW_JSON_METRIC { \"MetricName\": \"$METRIC_NAME\", \"Dimensions\": [{\"Name\": \"InstanceId\", \"Value\": \"$INSTANCE_ID\"} ], \"Value\": $METRIC_VALUE },"
+                       unset METRIC_NAME
+                       unset METRIC_VALUE
+
+                       METRIC_COUNTER=$((METRIC_COUNTER+1))
+                       if [ $METRIC_COUNTER -eq 20 ]; then
+                         # 20 is max metric collection size, so we have to submit here
+                         aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
+
+                         # reset
+                         METRIC_COUNTER=0
+                         CW_JSON_METRIC=''
+                       fi
+                     fi
+
+
+
+                     COUNTER=$((COUNTER+1))
+                   fi
+
+                   if [[ "$line" == "Client nfs v4:" ]]; then
+                     # the next line is the good stuff
+                     COUNTER=$((COUNTER+1))
+                   fi
+                 done <<< "$INPUT"
+                done
+
+                # submit whatever is left
+                aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
+              mode: '000755'
+              owner: ec2-user
+              group: ec2-user
+            "/home/ec2-user/crontab":
+              content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
+              owner: ec2-user
+              group: ec2-user
+          commands:
+            01_createdir:
+              command: !Sub "mkdir /${SharedFileStoreMountPoint}"
+        mount:
+          commands:
+            01_mount:
+              command: !Sub >
+                mount -t nfs4 -o nfsvers=4.1 ${EFSMountTargetResource2}.efs.${AWS::Region}.amazonaws.com:/ /${SharedFileStoreMountPoint}
+            02_permissions:
+              command: !Sub "chown ec2-user:ec2-user /${SharedFileStoreMountPoint}"   
+    Properties:
+      InstanceType: !Ref SideCarInstanceType    
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: SideCarInstanceType
+          - Arch
+      KeyName: !Ref EC2KeyName
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - !Ref InternalAllAccessSecurityGroup
+          SubnetId: !Select [0, !Ref PublicSubnets]
+
+
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SideCar'
+Mappings:
+  AWSInstanceType2Arch:
+    t1.micro:
+      Arch: HVM64
+    t2.nano:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.large:
+      Arch: HVM64
+    m1.small:
+      Arch: HVM64
+    m1.medium:
+      Arch: HVM64
+    m1.large:
+      Arch: HVM64
+    m1.xlarge:
+      Arch: HVM64
+    m2.xlarge:
+      Arch: HVM64
+    m2.2xlarge:
+      Arch: HVM64
+    m2.4xlarge:
+      Arch: HVM64
+    m3.medium:
+      Arch: HVM64
+    m3.large:
+      Arch: HVM64
+    m3.xlarge:
+      Arch: HVM64
+    m3.2xlarge:
+      Arch: HVM64
+    m4.large:
+      Arch: HVM64
+    m4.xlarge:
+      Arch: HVM64
+    m4.2xlarge:
+      Arch: HVM64
+    m4.4xlarge:
+      Arch: HVM64
+    m4.10xlarge:
+      Arch: HVM64
+    c1.medium:
+      Arch: HVM64
+    c1.xlarge:
+      Arch: HVM64
+    c3.large:
+      Arch: HVM64
+    c3.xlarge:
+      Arch: HVM64
+    c3.2xlarge:
+      Arch: HVM64
+    c3.4xlarge:
+      Arch: HVM64
+    c3.8xlarge:
+      Arch: HVM64
+    c4.large:
+      Arch: HVM64
+    c4.xlarge:
+      Arch: HVM64
+    c4.2xlarge:
+      Arch: HVM64
+    c4.4xlarge:
+      Arch: HVM64
+    c4.8xlarge:
+      Arch: HVM64
+    g2.2xlarge:
+      Arch: HVMG2
+    g2.8xlarge:
+      Arch: HVMG2
+    r3.large:
+      Arch: HVM64
+    r3.xlarge:
+      Arch: HVM64
+    r3.2xlarge:
+      Arch: HVM64
+    r3.4xlarge:
+      Arch: HVM64
+    r3.8xlarge:
+      Arch: HVM64
+    i2.xlarge:
+      Arch: HVM64
+    i2.2xlarge:
+      Arch: HVM64
+    i2.4xlarge:
+      Arch: HVM64
+    i2.8xlarge:
+      Arch: HVM64
+    d2.xlarge:
+      Arch: HVM64
+    d2.2xlarge:
+      Arch: HVM64
+    d2.4xlarge:
+      Arch: HVM64
+    d2.8xlarge:
+      Arch: HVM64
+    hi1.4xlarge:
+      Arch: HVM64
+    hs1.8xlarge:
+      Arch: HVM64
+    cr1.8xlarge:
+      Arch: HVM64
+    cc2.8xlarge:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+      HVMG2: ami-0a584ac55a7631c0c
+    us-west-2:
+      HVM64: ami-a0cfeed8
+      HVMG2: ami-0e09505bc235aa82d
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+      HVMG2: ami-066ee5fd4a9ef77f1
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+      HVMG2: ami-0a7c483d527806435
+    eu-west-2:
+      HVM64: ami-f976839e
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-0ebc281c20e89ba4b
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      HVM64: ami-0233214e13e500f77
+      HVMG2: ami-06223d46a6d0661c7
+    ap-northeast-1:
+      HVM64: ami-06cd52961ce9f0d85
+      HVMG2: ami-053cdd503598e4a9d
+    ap-northeast-2:
+      HVM64: ami-0a10b2721688ce9d2
+      HVMG2: NOT_SUPPORTED
+    ap-northeast-3:
+      HVM64: ami-0d98120a9fb693f07
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      HVM64: ami-0af2f764c580cc1f9
+      HVMG2: ami-009c33adf2a03baf9
+    ap-southeast-2:
+      HVM64: ami-05daec9b92f82fcee
+      HVMG2: ami-08efd89f971ace76d
+    ap-south-1:
+      HVM64: ami-0912f71e06545ad88
+      HVMG2: ami-097b15e89dbdcfcf4
+    us-east-2:
+      HVM64: ami-0b59bfac6be064b78
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-0b18956f
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-07b14488da8ea02a0
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      HVM64: ami-0a4eaf6c4454eda75
+      HVMG2: NOT_SUPPORTED
+    cn-northwest-1:
+      HVM64: ami-6b6a7d09
+      HVMG2: NOT_SUPPORTED
+
+
+
+#############        
