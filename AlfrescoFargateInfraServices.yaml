@@ -28,9 +28,6 @@ Outputs:
         - '.amazonaws.com'
         - ':/ '
         - !Ref SharedFileStoreMountPoint
-  EC2SideCar:
-    Description: ID of the EC2 micro instance to run configuration scripts
-    Value: !Ref Ec2Instance
   DatabaseEndPoint:
     Description: Database Server Instance ID
     Value: 
@@ -50,14 +47,8 @@ Outputs:
   InternalAllAccessSecurityGroupId: 
     Description: ID of the internal security group with access to all internal ports
     Value: !Ref InternalAllAccessSecurityGroup
-  EC2SideCar:
-    Description: ID of the EC2 micro instance to run configuration scripts
-    Value: !Ref Ec2Instance
-    
+   
 Parameters:
-  EC2KeyName:
-    Type: String
-    Default: "AlfEKS.pem"
   VPC:
     Type: AWS::EC2::VPC::Id
     Default: "vpc-04430248de3206393"
@@ -159,66 +150,6 @@ Parameters:
     Type: String
     Default: Th-sIs1t
     AllowedPattern: '^(?=.{8,}$)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?\W).*$'    
-  SideCarInstanceType:
-    Description: WebServer EC2 instance type
-    Type: String
-    Default: t2.micro
-    AllowedValues:
-      - t1.micro
-      - t2.nano
-      - t2.micro
-      - t2.small
-      - t2.medium
-      - t2.large
-      - m1.small
-      - m1.medium
-      - m1.large
-      - m1.xlarge
-      - m2.xlarge
-      - m2.2xlarge
-      - m2.4xlarge
-      - m3.medium
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - c1.medium
-      - c1.xlarge
-      - c3.large
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
-      - c4.large
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-      - g2.2xlarge
-      - g2.8xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
-      - i2.xlarge
-      - i2.2xlarge
-      - i2.4xlarge
-      - i2.8xlarge
-      - d2.xlarge
-      - d2.2xlarge
-      - d2.4xlarge
-      - d2.8xlarge
-      - hi1.4xlarge
-      - hs1.8xlarge
-      - cr1.8xlarge
-      - cc2.8xlarge
-      - cg1.4xlarge
-    ConstraintDescription: must be a valid EC2 instance type.    
 
 #################
 Resources:
@@ -232,11 +163,6 @@ Resources:
       - 
         CidrIp: "0.0.0.0/0"
         IpProtocol: "-1"
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          FromPort: 22
-          IpProtocol: tcp
-          ToPort: 22
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
@@ -432,118 +358,6 @@ Resources:
         Key: "APNblog"
         Value: "OpenSearchACS"
         
-  Ec2Instance: 
-    Type: AWS::EC2::Instance
-    Metadata: 
-      AWS::CloudFormation::Init:
-        configSets:
-          MountConfig:
-          - setup
-          - mount
-        setup:
-          packages:
-            yum:
-              nfs-utils: []
-          files:
-            "/home/ec2-user/post_nfsstat":
-              content: !Sub |
-                #!/bin/bash
-
-                INPUT="$(cat)"
-                CW_JSON_OPEN='{ "Namespace": "EFS", "MetricData": [ '
-                CW_JSON_CLOSE=' ] }'
-                CW_JSON_METRIC=''
-                METRIC_COUNTER=0
-
-                for COL in 1 2 3 4 5 6; do
-
-                 COUNTER=0
-                 METRIC_FIELD=$COL
-                 DATA_FIELD=$(($COL+($COL-1)))
-
-                 while read line; do
-                   if [[ COUNTER -gt 0 ]]; then
-
-                     LINE=`echo $line | tr -s ' ' `
-                     AWS_COMMAND="aws cloudwatch put-metric-data --region ${AWS::Region}"
-                     MOD=$(( $COUNTER % 2))
-
-                     if [ $MOD -eq 1 ]; then
-                       METRIC_NAME=`echo $LINE | cut -d ' ' -f $METRIC_FIELD`
-                     else
-                       METRIC_VALUE=`echo $LINE | cut -d ' ' -f $DATA_FIELD`
-                     fi
-
-                     if [[ -n "$METRIC_NAME" && -n "$METRIC_VALUE" ]]; then
-                       INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                       CW_JSON_METRIC="$CW_JSON_METRIC { \"MetricName\": \"$METRIC_NAME\", \"Dimensions\": [{\"Name\": \"InstanceId\", \"Value\": \"$INSTANCE_ID\"} ], \"Value\": $METRIC_VALUE },"
-                       unset METRIC_NAME
-                       unset METRIC_VALUE
-
-                       METRIC_COUNTER=$((METRIC_COUNTER+1))
-                       if [ $METRIC_COUNTER -eq 20 ]; then
-                         # 20 is max metric collection size, so we have to submit here
-                         aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
-
-                         # reset
-                         METRIC_COUNTER=0
-                         CW_JSON_METRIC=''
-                       fi
-                     fi
-
-
-
-                     COUNTER=$((COUNTER+1))
-                   fi
-
-                   if [[ "$line" == "Client nfs v4:" ]]; then
-                     # the next line is the good stuff
-                     COUNTER=$((COUNTER+1))
-                   fi
-                 done <<< "$INPUT"
-                done
-
-                # submit whatever is left
-                aws cloudwatch put-metric-data --region ${AWS::Region} --cli-input-json "`echo $CW_JSON_OPEN ${!CW_JSON_METRIC%?} $CW_JSON_CLOSE`"
-              mode: '000755'
-              owner: ec2-user
-              group: ec2-user
-            "/home/ec2-user/crontab":
-              content: "* * * * * /usr/sbin/nfsstat | /home/ec2-user/post_nfsstat\n"
-              owner: ec2-user
-              group: ec2-user
-          commands:
-            01_createdir:
-              command: !Sub "mkdir /${SharedFileStoreMountPoint}"
-        mount:
-          commands:
-            01_mount:
-              command: !Sub >
-                mount -t nfs4 -o nfsvers=4.1 ${EFSMountTargetResource2}.efs.${AWS::Region}.amazonaws.com:/ /${SharedFileStoreMountPoint}
-            02_permissions:
-              command: !Sub "chown ec2-user:ec2-user /${SharedFileStoreMountPoint}"   
-    Properties:
-      InstanceType: !Ref SideCarInstanceType    
-      ImageId:
-        Fn::FindInMap:
-        - AWSRegionArch2AMI
-        - Ref: AWS::Region
-        - Fn::FindInMap:
-          - AWSInstanceType2Arch
-          - Ref: SideCarInstanceType
-          - Arch
-      KeyName: !Ref EC2KeyName
-      NetworkInterfaces: 
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - !Ref InternalAllAccessSecurityGroup
-          SubnetId: !Select [0, !Ref PublicSubnets]
-
-
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-SideCar'
 Mappings:
   AWSInstanceType2Arch:
     t1.micro:
