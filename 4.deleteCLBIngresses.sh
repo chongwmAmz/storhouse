@@ -1,4 +1,4 @@
-!#/bin/bash
+#!/bin/bash
 kubectl -n alfresco delete ingress acs-alfresco-sync-service-ingress
 kubectl -n alfresco delete ingress acs-alfresco-cs-repository
 kubectl -n alfresco delete ingress acs-alfresco-cs-share
