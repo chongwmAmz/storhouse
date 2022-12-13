@@ -2,7 +2,7 @@
 
 externalPort: 443
 externalProtocol: https
-externalHost: <DNS_URL>
+externalHost: <DomainName>
 persistence:
   enabled: true
   storageClass:
