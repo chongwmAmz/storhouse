@@ -25,11 +25,11 @@ wget -O $POLICY_FILE https://github.com/kubernetes-sigs/aws-efs-csi-driver/raw/m
 aws iam create-policy \
     --policy-name  $POLICY_NAME \
     --policy-document file://$POLICY_FILE
-    POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME']" | jq -r .[].Arn)
+POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME']" | jq -r .[].Arn)
 eksctl create iamserviceaccount \
     --cluster $CLUSTER_NAME \
     --namespace kube-system \
     --name efs-csi-controller-sa \
     --attach-policy-arn $POLICY_ARN \
-    --approve \
-    --region $AWS_REGION
+    --region $AWS_REGION --approve \
+    --override-existing-serviceaccounts
