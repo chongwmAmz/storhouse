@@ -1,6 +1,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  annotations:
+    meta.helm.sh/release-name: acs
+    meta.helm.sh/release-namespace: alfresco
+  labels:
+    app.kubernetes.io/managed-by: Helm
   name: alfresco-volume-claim
   namespace: alfresco
 spec:
