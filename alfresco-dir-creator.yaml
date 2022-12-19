@@ -10,7 +10,7 @@ spec:
       - name: alfresco-dir-creator
         image: busybox
         command: ["/bin/sh"]
-        args: ["-c", "mkdir -p --mode=770 /shared/alfresco-content-services/filestore-data /shared/alfresco-content-services/repository-data /shared/alfresco-infrastructure/activemq-data&&chown -R 33000:1000 /shared&&chmod -R 770 /shared"]
+        args: ["-c", "mkdir -p --mode=770 /shared/alfresco-content-services/filestore-data /shared/alfresco-content-services/repository-data /shared/alfresco-infrastructure/activemq-data&&chown -R 33000:1000 /shared/alfresco-content-services&&chown -R 33031:1000 /shared/alfresco-infrastructure&&chmod -R 770 /shared"]
         volumeMounts:
         - name: efs-pvc
           mountPath: /shared
