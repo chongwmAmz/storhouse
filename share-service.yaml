@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /share
+    alb.ingress.kubernetes.io/success-codes: 200,302
+  name: acs-alfresco-cs-share
+  labels:
+    app: acs-alfresco-cs-share
+    release: acs
+    component: share
+    chart: alfresco-content-services-5.3.0
+    heritage: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: share
+  selector:
+    app: acs-alfresco-cs-share
+    release: acs
+    component: share
+---
