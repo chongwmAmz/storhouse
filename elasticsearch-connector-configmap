@@ -1,0 +1,26 @@
+apiVersion: v1
+data:
+  ALFRESCO_ACCEPTEDCONTENTMEDIATYPESCACHE_BASEURL: http://acs-alfresco-router/transform/config
+  ALFRESCO_ACCEPTEDCONTENTMEDIATYPESCACHE_ENABLED: "true"
+  ALFRESCO_ACCEPTEDCONTENTMEDIATYPESCACHE_REFRESHTIME: 0 0 * * * *
+  ALFRESCO_PATHINDEXINGCOMPONENT_ENABLED: "true"
+  ALFRESCO_SHAREDFILESTORE_BASEURL: http://acs-alfresco-filestore:80/alfresco/api/-default-/private/sfs/versions/1/file/
+  ELASTICSEARCH_INDEXNAME: alfresco
+  JAVA_OPTS: '-Djdk.tls.client.protocols=TLSv1.2 -Djavax.net.ssl.trustStore=/opt/truststores/truststore.pkcs12
+    -Djavax.net.ssl.trustStorePassword=sph3re  '
+  SPRING_ELASTICSEARCH_REST_PASSWORD: <REDACTED>
+  SPRING_ELASTICSEARCH_REST_URIS: <REDACTED>
+  SPRING_ELASTICSEARCH_REST_USERNAME: <REDACTED>
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: acs
+    meta.helm.sh/release-namespace: alfresco
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    chart: alfresco-elasticsearch-connector-0.1.0
+    component: search
+    heritage: Helm
+    release: acs
+  name: acs-alfresco-elasticsearch-connector-configmap
+  namespace: alfresco
