@@ -1,0 +1,75 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acs-alfresco-elasticsearch-connector-content
+  labels:
+    helm.sh/chart: alfresco-elasticsearch-connector-0.1.0
+    app.kubernetes.io/name: alfresco-elasticsearch-connector
+    app.kubernetes.io/instance: acs
+    app.kubernetes.io/version: "3.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alfresco-elasticsearch-connector
+      app.kubernetes.io/instance: acs
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alfresco-elasticsearch-connector
+        app.kubernetes.io/instance: acs
+    spec:
+      imagePullSecrets:
+        - name: docker-registry-secret
+      volumes:
+      - name: amq-truststore
+        secret:
+          defaultMode: 420
+          optional: true
+          secretName: amqtruststore
+      securityContext:
+        {}
+      containers:
+        - name: alfresco-elasticsearch-connector-content
+          image: "quay.io/alfresco/alfresco-elasticsearch-live-indexing-content:\
+            3.2.0"
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: acs-alfresco-elasticsearch-connector-configmap
+            - secretRef:
+                name: acs-alfresco-cs-brokersecret
+          env:
+            - name: SPRING_ACTIVEMQ_BROKERURL
+              value: $(BROKER_URL)
+            - name: SPRING_ACTIVEMQ_USER
+              value: $(BROKER_USERNAME)
+            - name: SPRING_ACTIVEMQ_PASSWORD
+             value: $(BROKER_PASSWORD)
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 300
+            timeoutSeconds: 60
+            httpGet:
+              path: /actuator/health
+              port: http
+          readinessProbe:
+            initialDelaySeconds: 60
+            timeoutSeconds: 60
+            httpGet:
+              path: /actuator/health
+              port: http
+          resources:
+            limits:
+              memory: 2048Mi
+            requests:
+              memory: 256Mi
+          volumeMounts:
+          - mountPath: /opt/truststores/
+            name: amq-truststore
+---
