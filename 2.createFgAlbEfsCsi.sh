@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script is adapted from instructions provided in https://www.eksworkshop.com/beginner/180_fargate/prerequisites-for-alb/
+
 ACCOUNT_ID=$(aws sts get-caller-identity | jq -r .Account)
 CLUSTER_NAME=$2
 AWS_REGION=$1
