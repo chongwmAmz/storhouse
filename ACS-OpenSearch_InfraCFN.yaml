@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS serverless infrastructure services for Alfresco Content Services 7.3 with Search Enterprise 3.2.
+Description: AWS serverless infrastructure services for Alfresco Content Services 7.3 with Search Enterprise 3.2. Encrypted
 Outputs:
   FileSystemMount:
     Description: File system ID
@@ -218,7 +218,8 @@ Resources:
       DBInstanceClass: db.serverless
       EnablePerformanceInsights: false
       MonitoringInterval: 0
-
+      StorageEncrypted: true
+      KmsKeyId: !Ref KMS
 
   EFSSharedFileStore:
     Type: "AWS::EFS::FileSystem"
@@ -228,6 +229,8 @@ Resources:
       PerformanceMode: "generalPurpose"
       Encrypted: false
       ThroughputMode: "bursting"
+      Encrypted: true
+      KmsKeyId: !Ref KMS      
       FileSystemTags: 
       - 
         Key: "Name"
