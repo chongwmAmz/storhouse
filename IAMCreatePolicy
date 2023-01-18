@@ -10,7 +10,7 @@
                 "iam:PutRolePolicy",
                 "iam:ListPolicies"
             ],
-            "Resource": "arn:aws:iam::132750012558:*"
+            "Resource": "arn:aws:iam::<YourAWSAccountNumber>:*"
         }
     ]
 }
