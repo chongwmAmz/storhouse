@@ -29,7 +29,7 @@
                 "iam:ListPolicies",
                 "iam:CreateServiceLinkedRole"
             ],
-            "Resource": "arn:aws:iam::132750012558:*"
+            "Resource": "arn:aws:iam::<AWS_Account_Number>:*"
         }
     ]
 }
