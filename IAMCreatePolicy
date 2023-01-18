@@ -4,13 +4,32 @@
         {
             "Effect": "Allow",
             "Action": [
+                "kms:CreateAlias",
+                "kms:CreateKey",
+                "kms:DeleteAlias",
+                "kms:Describe*",
+                "kms:GenerateRandom",
+                "kms:Get*",
+                "kms:List*",
+                "kms:TagResource",
+                "kms:UntagResource",
+                "iam:ListGroups",
+                "iam:ListRoles",
+                "iam:ListUsers"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
                 "iam:AttachRolePolicy",
                 "iam:CreateRole",
                 "iam:CreatePolicy",
                 "iam:PutRolePolicy",
-                "iam:ListPolicies"
+                "iam:ListPolicies",
+                "iam:CreateServiceLinkedRole"
             ],
-            "Resource": "arn:aws:iam::<YourAWSAccountNumber>:*"
+            "Resource": "arn:aws:iam::132750012558:*"
         }
     ]
 }
