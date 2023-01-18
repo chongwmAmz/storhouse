@@ -1,0 +1,16 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:AttachRolePolicy",
+                "iam:CreateRole",
+                "iam:CreatePolicy",
+                "iam:PutRolePolicy",
+                "iam:ListPolicies"
+            ],
+            "Resource": "arn:aws:iam::132750012558:*"
+        }
+    ]
+}
