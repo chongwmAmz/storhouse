@@ -4,32 +4,35 @@
         {
             "Effect": "Allow",
             "Action": [
-                "kms:CreateAlias",
-                "kms:CreateKey",
-                "kms:DeleteAlias",
-                "kms:Describe*",
-                "kms:GenerateRandom",
-                "kms:Get*",
-                "kms:List*",
                 "kms:TagResource",
                 "kms:UntagResource",
-                "iam:ListGroups",
+                "kms:List*",
+                "kms:GenerateRandom",
+                "kms:Get*",
+                "kms:CreateAlias",
+                "kms:Describe*",
+                "kms:CreateKey",
                 "iam:ListRoles",
-                "iam:ListUsers"
+                "iam:ListUsers",
+                "iam:ListGroups",
+                "iam:CreateServiceLinkedRole",
+                "kms:DeleteAlias",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:GetObject",
+                "s3:CreateBucket",
+                "cloudformation:CreateUploadBucket"
             ],
             "Resource": "*"
         },
         {
             "Effect": "Allow",
             "Action": [
-                "iam:AttachRolePolicy",
-                "iam:CreateRole",
-                "iam:CreatePolicy",
-                "iam:PutRolePolicy",
                 "iam:ListPolicies",
-                "iam:CreateServiceLinkedRole"
+                "iam:ListRoles",
+                "iam:ListUsers"
             ],
-            "Resource": "arn:aws:iam::<AWS_Account_Number>:*"
+            "Resource": "arn:aws:iam::<YourAWSAccountNumber>:*"
         }
     ]
 }
