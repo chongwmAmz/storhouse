@@ -128,7 +128,7 @@ persistence:
 activemq:
   enabled: false  
 messageBroker: &acs_messageBroker
-  url: <AMAZON MQ OPENWIRE ENDPOINT>
+  url: <FailOver AmazonMQ Broker OpenWireEndpoint>
   user: <MQ USER NAME>
   password: <MQ USER PASSWORD>
 
@@ -197,7 +197,7 @@ alfresco-sync-service:
     image:
     tag: 3.8.0
   messageBroker:
-    url: ssl://<AMAZON MQ OPENWIRE ENDPOINT>
+    url: <FailOver AmazonMQ Broker OpenWireEndpoint>
     user: <MQ USER NAME>
     password: <MQ USER PASSWORD>
 
