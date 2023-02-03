@@ -34,7 +34,7 @@ Outputs:
       'Fn::GetAtt':
         - RDSDBCluster
         - Endpoint.Address
-  FailOverAmazonMQBrokerEndPoint:
+  FailOverAmazonMQBrokerOpenWireEndpoint:
     Description: AmazonMQ OpenWire endpoint
     Value: !Join 
       - ''
