@@ -21,7 +21,8 @@
                 "s3:ListBucket",
                 "s3:GetObject",
                 "s3:CreateBucket",
-                "cloudformation:CreateUploadBucket"
+                "cloudformation:CreateUploadBucket",
+                "ecr:BatchGetImage"
             ],
             "Resource": "*"
         },
