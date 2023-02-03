@@ -34,9 +34,16 @@ Outputs:
       'Fn::GetAtt':
         - RDSDBCluster
         - Endpoint.Address
-  ActiveMQEndPoint:
-    Description: AmazonMQ OpenWire end point ActiveMQ
-    Value: !Select [0, !GetAtt AmazonMQBroker.OpenWireEndpoints]
+  FailOverAmazonMQBrokerEndPoint:
+    Description: AmazonMQ OpenWire endpoint
+    Value: !Join 
+      - ''
+      - - ''
+        - 'failover:('
+        - !Select [0, !GetAtt AmazonMQBroker.OpenWireEndpoints]
+        - ','
+        - !Select [1, !GetAtt AmazonMQBroker.OpenWireEndpoints]
+        - ')'
         
   OpenSearchDomainEndpoint:
     Description: OpenSearch domain endpoint
