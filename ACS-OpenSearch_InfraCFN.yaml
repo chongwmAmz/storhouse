@@ -119,8 +119,8 @@ Parameters:
   AmazonMQBrokerPassword:
     Description: Enter a password to administer the MQ broker to be created. Minimum 12 characters, at least 4 unique characters. Can't contain commas (,), colons (:), equals signs (=), spaces or non-printable ASCII characters.
     Type: String
-    Default: beeisnotdctm
-
+#    Default: beeisnotdctm
+    NoEcho: true
   KMS:
     Type: 'String'
     Description: Description of KMS for use with OpenSearch
@@ -155,7 +155,8 @@ Parameters:
   OpenSearchMasterPassword:
     Description: Enter master password for the OpenSearch domain to be created, min 8 characters. At least one uppercase letter, one lowercase letter, one number, and one special character.
     Type: String
-    Default: Th-sIs1t
+#    Default: Th-sIs1t
+    NoEcho: true
     AllowedPattern: '^(?=.{8,}$)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?\W).*$'    
 
 #################
@@ -234,7 +235,6 @@ Resources:
       BackupPolicy:
         Status: DISABLED    
       PerformanceMode: "generalPurpose"
-      Encrypted: false
       ThroughputMode: "bursting"
       Encrypted: true
       KmsKeyId: !Ref KMS      
