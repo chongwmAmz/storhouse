@@ -1,0 +1,9 @@
+AmazonRDSFullAccess - arn:aws:iam::aws:policy/AmazonRDSFullAccess
+AmazonEC2FullAccess - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+AWSCertificateManagerReadOnly - arn:aws:iam::aws:policy/AWSCertificateManagerReadOnly
+AmazonElasticFileSystemFullAccess -arn:aws:iam::aws:policy/AmazonElasticFileSystemFullAccess
+AmazonElasticFileSystemFullAccess - arn:aws:iam::aws:policy/AmazonElasticFileSystemFullAccess
+AmazonMQFullAccess - arn:aws:iam::aws:policy/AmazonMQFullAccess
+AWSCloudFormationFullAccess - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+AmazonOpenSearchServiceFullAccess - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+AmazonEKSFargatePodExecutionRolePolicy - arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy
