@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: AWS serverless infrastructure services for Alfresco Content Services 7.3 with Search Enterprise 3.2. Encrypted
+Description: AWS serverless infrastructure services for Alfresco Content Services 7.3 with Search Enterprise 3.2.
 Outputs:
   FileSystemMount:
     Description: File system ID
@@ -34,7 +34,8 @@ Outputs:
       'Fn::GetAtt':
         - RDSDBCluster
         - Endpoint.Address
-  FailOverAmazonMQBrokerOpenWireEndpoint:
+
+  FailOverAmazonMQBrokerEndPoint:
     Description: AmazonMQ OpenWire endpoint
     Value: !Join 
       - ''
@@ -44,7 +45,7 @@ Outputs:
         - ','
         - !Select [1, !GetAtt AmazonMQBroker.OpenWireEndpoints]
         - ')'
-        
+
   OpenSearchDomainEndpoint:
     Description: OpenSearch domain endpoint
     Value:
@@ -58,7 +59,7 @@ Outputs:
 Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
-    Default: "vpc-xxxxxxxxxxxxxxxxx"
+    Default: "eksctl created VPC"
   DBName:
     Type: String
     Default: alfresco
@@ -67,7 +68,7 @@ Parameters:
     Default: alfresco
   DBMasterUserPassword:
     Type: String
-    Default: alfresco
+#    Default: alfresco
     NoEcho: true
   DBClusterIdentifier:
     Type: String
@@ -76,7 +77,7 @@ Parameters:
     Description:  1 to 63 lowercase letters, numbers, or hyphens. First character must be a letter. Can't end with a hyphen or contain two consecutive hyphens.
   DBEngineVersion:
     Type: String
-    Default: "14.5"
+    Default: 14.5
     AllowedValues:
       - 13.6
       - 13.7
@@ -98,16 +99,13 @@ Parameters:
     Type: String
     MinLength: '1'
     Default: /mnt/sharedfilestore
-  PublicSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: "subnet-xxxxxxxxxxxxxxxxx,subnet-xxxxxxxxxxxxxxxxx"
   PrivateSubnets:
     Type: List<AWS::EC2::Subnet::Id>
-    Default: "subnet-xxxxxxxxxxxxxxxxx,subnet-xxxxxxxxxxxxxxxxx"
+    Default: "eksctl created private subnets"
   InternalSecurityGroups:
      Type: List<AWS::EC2::SecurityGroup::Id>
      #https://tinyurl.com/4spbj9na
-     Default: "sg-xxxxxxxxxxxxxxxxx,sg-xxxxxxxxxxxxxxxxx"
+     Default: "eksctl created security groups"
   AmazonMQBrokerName:
     Description: Enter a name for the MQ broker to be created
     Type: String
@@ -121,10 +119,11 @@ Parameters:
     Type: String
 #    Default: beeisnotdctm
     NoEcho: true
+
   KMS:
     Type: 'String'
-    Description: Description of KMS for use with OpenSearch
-    Default: 'mrk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    Description: KMS for use with OpenSearch, EFS and RDS
+    Default: 'Key ID mrk*****'
   OpenSearchDomainName:
     Description: Enter a name for the OpenSearch domain to be created
     Type: String
@@ -146,7 +145,7 @@ Parameters:
       - r6g.8xlarge.search
       - r6g.16xlarge.search
       
-    ConstraintDescription: must be a valid instance type for the current region.    
+    ConstraintDescription: must be a valid instance type for the current region.
   OpenSearchMasterUserName:
     Description: Enter master username for the OpenSearch domain to be created, must be between 1 and 16 characters.
     Type: String
@@ -156,8 +155,8 @@ Parameters:
     Description: Enter master password for the OpenSearch domain to be created, min 8 characters. At least one uppercase letter, one lowercase letter, one number, and one special character.
     Type: String
 #    Default: Th-sIs1t
-    NoEcho: true
     AllowedPattern: '^(?=.{8,}$)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])(?=.*?\W).*$'    
+    NoEcho: True
 
 #################
 Resources:
@@ -178,7 +177,6 @@ Resources:
           Value: "https://gist.github.com/alanwill/9254414"
   InternalAllAccessSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: InternalAllAccessSecurityGroup
     Properties:
       GroupId: !Ref InternalAllAccessSecurityGroup
       IpProtocol: "-1"
@@ -196,7 +194,6 @@ Resources:
 
   RDSDBCluster:
     Type: 'AWS::RDS::DBCluster'
-    DependsOn: DatabaseSubnetGroup
     Properties:
       Engine: aurora-postgresql
       DBClusterIdentifier: !Ref DBClusterIdentifier
@@ -205,6 +202,8 @@ Resources:
       MasterUserPassword: !Ref DBMasterUserPassword
       DatabaseName: !Ref DBName
       Port: 5432
+      StorageEncrypted: true
+      KmsKeyId: !Ref KMS      
       ServerlessV2ScalingConfiguration:
         MinCapacity: !Ref DBMinCapacity
         MaxCapacity: !Ref DBMaxCapacity
@@ -226,8 +225,6 @@ Resources:
       DBInstanceClass: db.serverless
       EnablePerformanceInsights: false
       MonitoringInterval: 0
-      StorageEncrypted: true
-      KmsKeyId: !Ref KMS
 
   EFSSharedFileStore:
     Type: "AWS::EFS::FileSystem"
@@ -274,7 +271,7 @@ Resources:
       AutoMinorVersionUpgrade: true
       BrokerName: !Sub '${AmazonMQBrokerName}_${AWS::StackName}'
       DeploymentMode: "ACTIVE_STANDBY_MULTI_AZ"
-      EngineType: "ActiveMQ"
+      EngineType: "ACTIVEMQ"
       EngineVersion: "5.17.2"
       HostInstanceType: "mq.m5.large"
       PubliclyAccessible: false
@@ -369,170 +366,4 @@ Resources:
         Key: "APNblog"
         Value: "OpenSearchACS"
         
-Mappings:
-  AWSInstanceType2Arch:
-    t1.micro:
-      Arch: HVM64
-    t2.nano:
-      Arch: HVM64
-    t2.micro:
-      Arch: HVM64
-    t2.small:
-      Arch: HVM64
-    t2.medium:
-      Arch: HVM64
-    t2.large:
-      Arch: HVM64
-    m1.small:
-      Arch: HVM64
-    m1.medium:
-      Arch: HVM64
-    m1.large:
-      Arch: HVM64
-    m1.xlarge:
-      Arch: HVM64
-    m2.xlarge:
-      Arch: HVM64
-    m2.2xlarge:
-      Arch: HVM64
-    m2.4xlarge:
-      Arch: HVM64
-    m3.medium:
-      Arch: HVM64
-    m3.large:
-      Arch: HVM64
-    m3.xlarge:
-      Arch: HVM64
-    m3.2xlarge:
-      Arch: HVM64
-    m4.large:
-      Arch: HVM64
-    m4.xlarge:
-      Arch: HVM64
-    m4.2xlarge:
-      Arch: HVM64
-    m4.4xlarge:
-      Arch: HVM64
-    m4.10xlarge:
-      Arch: HVM64
-    c1.medium:
-      Arch: HVM64
-    c1.xlarge:
-      Arch: HVM64
-    c3.large:
-      Arch: HVM64
-    c3.xlarge:
-      Arch: HVM64
-    c3.2xlarge:
-      Arch: HVM64
-    c3.4xlarge:
-      Arch: HVM64
-    c3.8xlarge:
-      Arch: HVM64
-    c4.large:
-      Arch: HVM64
-    c4.xlarge:
-      Arch: HVM64
-    c4.2xlarge:
-      Arch: HVM64
-    c4.4xlarge:
-      Arch: HVM64
-    c4.8xlarge:
-      Arch: HVM64
-    g2.2xlarge:
-      Arch: HVMG2
-    g2.8xlarge:
-      Arch: HVMG2
-    r3.large:
-      Arch: HVM64
-    r3.xlarge:
-      Arch: HVM64
-    r3.2xlarge:
-      Arch: HVM64
-    r3.4xlarge:
-      Arch: HVM64
-    r3.8xlarge:
-      Arch: HVM64
-    i2.xlarge:
-      Arch: HVM64
-    i2.2xlarge:
-      Arch: HVM64
-    i2.4xlarge:
-      Arch: HVM64
-    i2.8xlarge:
-      Arch: HVM64
-    d2.xlarge:
-      Arch: HVM64
-    d2.2xlarge:
-      Arch: HVM64
-    d2.4xlarge:
-      Arch: HVM64
-    d2.8xlarge:
-      Arch: HVM64
-    hi1.4xlarge:
-      Arch: HVM64
-    hs1.8xlarge:
-      Arch: HVM64
-    cr1.8xlarge:
-      Arch: HVM64
-    cc2.8xlarge:
-      Arch: HVM64
-  AWSRegionArch2AMI:
-    us-east-1:
-      HVM64: ami-0ff8a91507f77f867
-      HVMG2: ami-0a584ac55a7631c0c
-    us-west-2:
-      HVM64: ami-a0cfeed8
-      HVMG2: ami-0e09505bc235aa82d
-    us-west-1:
-      HVM64: ami-0bdb828fd58c52235
-      HVMG2: ami-066ee5fd4a9ef77f1
-    eu-west-1:
-      HVM64: ami-047bb4163c506cd98
-      HVMG2: ami-0a7c483d527806435
-    eu-west-2:
-      HVM64: ami-f976839e
-      HVMG2: NOT_SUPPORTED
-    eu-west-3:
-      HVM64: ami-0ebc281c20e89ba4b
-      HVMG2: NOT_SUPPORTED
-    eu-central-1:
-      HVM64: ami-0233214e13e500f77
-      HVMG2: ami-06223d46a6d0661c7
-    ap-northeast-1:
-      HVM64: ami-06cd52961ce9f0d85
-      HVMG2: ami-053cdd503598e4a9d
-    ap-northeast-2:
-      HVM64: ami-0a10b2721688ce9d2
-      HVMG2: NOT_SUPPORTED
-    ap-northeast-3:
-      HVM64: ami-0d98120a9fb693f07
-      HVMG2: NOT_SUPPORTED
-    ap-southeast-1:
-      HVM64: ami-0af2f764c580cc1f9
-      HVMG2: ami-009c33adf2a03baf9
-    ap-southeast-2:
-      HVM64: ami-05daec9b92f82fcee
-      HVMG2: ami-08efd89f971ace76d
-    ap-south-1:
-      HVM64: ami-0912f71e06545ad88
-      HVMG2: ami-097b15e89dbdcfcf4
-    us-east-2:
-      HVM64: ami-0b59bfac6be064b78
-      HVMG2: NOT_SUPPORTED
-    ca-central-1:
-      HVM64: ami-0b18956f
-      HVMG2: NOT_SUPPORTED
-    sa-east-1:
-      HVM64: ami-07b14488da8ea02a0
-      HVMG2: NOT_SUPPORTED
-    cn-north-1:
-      HVM64: ami-0a4eaf6c4454eda75
-      HVMG2: NOT_SUPPORTED
-    cn-northwest-1:
-      HVM64: ami-6b6a7d09
-      HVMG2: NOT_SUPPORTED
-
-
-
 #############        
