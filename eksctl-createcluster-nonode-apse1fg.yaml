@@ -24,7 +24,8 @@ kubernetesNetworkConfig:
 metadata:
   name: <ReplaceWith_CLUSTER_NAME>
   region: ap-southeast-1
-  version: "1.23"
+  version: "1.24"
+#  version: "1.23"
 privateCluster:
   enabled: false
   skipEndpointCreation: false
