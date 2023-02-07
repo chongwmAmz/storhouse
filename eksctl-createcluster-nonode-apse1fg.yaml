@@ -3,7 +3,8 @@ availabilityZones:
 - ap-southeast-1a
 - ap-southeast-1b
 cloudWatch:
-  clusterLogging: {}
+  clusterLogging:
+    enableTypes: ["*"]
 fargateProfiles:
 - name: fp-default
   selectors:
